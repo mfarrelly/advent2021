@@ -6,31 +6,12 @@ using System.IO;
 using System.Linq;
 
 
-string GetGamma(Dictionary<int, (int countOf1, int countOf0)> values)
-{
-    var result = "";
-    foreach (var d in values)
-    {
-        result += d.Value.countOf0 > d.Value.countOf1 ? "0" : "1";
-    }
+string GetGamma(Dictionary<int, (int countOf1, int countOf0)> values) => 
+    values.Aggregate("", (current, d) => current + (d.Value.countOf0 > d.Value.countOf1 ? "0" : "1"));
 
-    return result;
-}
+string GetEpsilon(Dictionary<int, (int countOf1, int countOf0)> values) => 
+    values.Aggregate("", (current, d) => current + (d.Value.countOf0 > d.Value.countOf1 ? "1" : "0"));
 
-string GetEpsilon(Dictionary<int, (int countOf1, int countOf0)> values)
-{
-    var result = "";
-    foreach (var d in values)
-    {
-        result += d.Value.countOf0 > d.Value.countOf1 ? "1" : "0";
-    }
-
-    return result;
-}
-
-
-// Run the program.
-var fileInfo = new FileInfo(args[0]);
 
 void Part1(List<string>? list)
 {
@@ -75,24 +56,21 @@ void Part1(List<string>? list)
     Console.WriteLine($"g:{g}, {gAsInt}, e:{e}, {eAsInt} == {gAsInt * eAsInt}");
 }
 
-(int countOf0, int countOf1) GetCounts(string[] strings, int i)
-{
-    var valueTuple = (countOf0: 0, countOf1: 0);
-
-    foreach (var d in strings)
-    {
-        if (d[i].Equals(obj: '0'))
+(int countOf0, int countOf1) GetCounts(string[] strings, int i) =>
+    strings.Aggregate((countOf0: 0, countOf1: 0), (acc, next) =>
         {
-            valueTuple.countOf0++;
-        }
-        else
-        {
-            valueTuple.countOf1++;
-        }
-    }
+            if (next[i].Equals(obj: '0'))
+            {
+                acc.countOf0++;
+            }
+            else
+            {
+                acc.countOf1++;
+            }
 
-    return valueTuple;
-}
+            return acc;
+        },
+        acc => acc);
 
 string GetO2Internal(string[] values, int digit)
 {
@@ -138,16 +116,8 @@ string GetCO2Internal(string[] values, int digit)
     return GetCO2Internal(finalValues, digit + 1);
 }
 
-string GetO2(List<string> values)
-{
-    return GetO2Internal(values.ToArray(), digit: 0);
-}
-
-
-string GetCO2(List<string> values)
-{
-    return GetCO2Internal(values.ToArray(), digit: 0);
-}
+string GetO2(List<string> values) => GetO2Internal(values.ToArray(), digit: 0);
+string GetCO2(List<string> values) => GetCO2Internal(values.ToArray(), digit: 0);
 
 void Part2(List<string> list)
 {
@@ -162,6 +132,11 @@ void Part2(List<string> list)
     Console.WriteLine($"total: {o2int * co2int}");
 }
 
+
+// Run the program.
+var fileInfo = new FileInfo(args[0]);
+
+
 if (fileInfo.Exists)
 {
     var allLines = File.ReadAllLines(fileInfo.FullName);
@@ -170,7 +145,6 @@ if (fileInfo.Exists)
         return line;
     }).ToList();
 
-    
     Part1(allValues);
     Part2(allValues);
 }
