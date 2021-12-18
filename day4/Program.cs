@@ -1,13 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-// Run the program.
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-var fileInfo = new FileInfo(args[0]);
+﻿var fileInfo = new FileInfo(args[0]);
 
 int[][] Transform(int[][] board) =>
     Enumerable
@@ -17,15 +8,19 @@ int[][] Transform(int[][] board) =>
 
 bool IsSolved(int[] calledNumbers, int[][] board)
 {
+    if (calledNumbers.Length < 5)
+    {
+        return false;
+    }
     // test rows
-    if (board.Any(row => calledNumbers.All(row.Contains)))
+    if (board.Any(row => row.All(calledNumbers.Contains)))
     {
         return true;
     }
 
     var partitionedData = Transform(board);
     
-    if (partitionedData.Any(columnRow => calledNumbers.All(columnRow.Contains)))
+    if (partitionedData.Any(row => row.All(calledNumbers.Contains)))
     {
         return true;
     }
@@ -42,8 +37,8 @@ Dictionary<int, int[][]> GetBoards(List<string> allLines)
     for (var i = 1; i < allLines.Count; i += 6)
     {
         // First line will be blank
-        var boardLines = allLines.GetRange(i + 1, count: 6);
-        var board = boardLines.Select(l => l.Split(",", StringSplitOptions.TrimEntries).Select(int.Parse).ToArray()).ToArray();
+        var boardLines = allLines.GetRange(i + 1, count: 5);
+        var board = boardLines.Select(l => l.Split(" ", StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray()).ToArray();
         result.Add(id++, board);
     }
 
@@ -53,22 +48,24 @@ Dictionary<int, int[][]> GetBoards(List<string> allLines)
 void Part1(List<string> allLines)
 {
     var callNumbers = allLines[0].Split(",").Select(int.Parse).ToList();
+    Console.WriteLine($"callNumbers {callNumbers}");
     var boards = GetBoards(allLines);
 
-    var result = (nums: Array.Empty<int>(), board: Array.Empty<int[]>());
+    ResultBoard result = null;
     
     var wonBoards = callNumbers
         .Aggregate(
             Array.Empty<int>(), 
             (acc, next) =>
             {
+                Console.WriteLine($"NEXT {next}");
                 var currentNumbers = acc.Append(next).ToArray();
                 foreach (var board in boards)
                 {
                     var solved = IsSolved(currentNumbers, board.Value);
-                    if (solved)
+                    if (solved && result is null)
                     {
-                        result = (currentNumbers, board.Value);
+                        result = new ResultBoard(currentNumbers, board.Value);
                         break;
                     }
                 }
@@ -76,9 +73,16 @@ void Part1(List<string> allLines)
                 return currentNumbers;
             }, 
             acc => acc);
+
+    if (result is null) return;
     
-    Console.WriteLine($"Solved with {string.Join(",", result.nums)}");
-    Console.WriteLine($"Board with {string.Join(",", result.board.Select(r => string.Join("|", r)))}");
+    var resultSum = GetUnmarked(result);
+
+    Console.WriteLine($"Solved with {string.Join(",", result.Nums)}");
+    Console.WriteLine(
+        $"Board with {string.Join(Environment.NewLine, result.Board.Select(r => string.Join(" ", r)))}");
+    
+    Console.WriteLine($"Sum = {resultSum}");
 }
 
 if (fileInfo.Exists)
@@ -91,3 +95,16 @@ if (fileInfo.Exists)
     Part1(allLines);
     // Part2(allValues);
 }
+
+int GetUnmarked(ResultBoard board)
+{
+    var unmarked = (
+        from t in board.Board 
+        from j in t 
+        where !board.Nums.Contains(j) 
+        select j).ToList();
+
+    return unmarked.Sum(i => i) * board.Nums.Last();
+}
+
+record ResultBoard(int[] Nums, int[][] Board);
