@@ -1,10 +1,22 @@
 ﻿var fileInfo = new FileInfo(args[0]);
 
+string FlattenBoard(int[][] board) =>
+    string.Concat(
+        from t in board 
+        from j in t 
+        select j.ToString()
+    );
+
 int[][] Transform(int[][] board) =>
     Enumerable
         .Range(start: 0, count: 5)
         .Select(column => board.Select(line => line[column]).ToArray())
         .ToArray();
+
+
+void PrintBoard(int[][] board) =>
+    Console.WriteLine(
+        $"Board with {string.Join(Environment.NewLine, board.Select(r => string.Join(" ", r)))}");
 
 bool IsSolved(int[] calledNumbers, int[][] board)
 {
@@ -51,9 +63,9 @@ void Part1(List<string> allLines)
     Console.WriteLine($"callNumbers {callNumbers}");
     var boards = GetBoards(allLines);
 
-    ResultBoard result = null;
+    var result = new List<ResultBoard>();
     
-    var wonBoards = callNumbers
+    callNumbers
         .Aggregate(
             Array.Empty<int>(), 
             (acc, next) =>
@@ -63,10 +75,9 @@ void Part1(List<string> allLines)
                 foreach (var board in boards)
                 {
                     var solved = IsSolved(currentNumbers, board.Value);
-                    if (solved && result is null)
+                    if (solved && !result.Exists(r => FlattenBoard(r.Board).Equals(FlattenBoard(board.Value))))
                     {
-                        result = new ResultBoard(currentNumbers, board.Value);
-                        break;
+                        result.Add(new ResultBoard(currentNumbers, board.Value));
                     }
                 }
 
@@ -75,14 +86,23 @@ void Part1(List<string> allLines)
             acc => acc);
 
     if (result is null) return;
-    
-    var resultSum = GetUnmarked(result);
 
-    Console.WriteLine($"Solved with {string.Join(",", result.Nums)}");
-    Console.WriteLine(
-        $"Board with {string.Join(Environment.NewLine, result.Board.Select(r => string.Join(" ", r)))}");
+    var bestBoard = result
+        .OrderBy(b => b.Nums.Length)
+        .First();
+    var worstBoard = result
+        .OrderByDescending(b => b.Nums.Length)
+        .First();
     
-    Console.WriteLine($"Sum = {resultSum}");
+    void WriteLog(ResultBoard board)
+    {
+        var a = GetUnmarked(board);
+        Console.WriteLine($"Solved with {string.Join(",", board.Nums)}");
+        Console.WriteLine($"Sum = {a}");
+    }
+
+    WriteLog(bestBoard);
+    WriteLog(worstBoard);
 }
 
 if (fileInfo.Exists)
